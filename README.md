@@ -1,130 +1,133 @@
 [![Build Status](https://travis-ci.org/KadrusBAG/lab06.svg?branch=master)](https://travis-ci.org/KadrusBAG/lab06)
-[![Build Status](https://travis-ci.org/KadrusBAG/lab06.svg?branch=master)](https://travis-ci.org/KadrusBAG/lab06)
-## Laboratory work III
 
-Данная лабораторная работа посвещена изучению систем контроля версий на примере **Git**.
+## Laboratory work VI
 
-```bash
-$ open https://git-scm.com
+Данная лабораторная работа посвещена изучению фреймворков для тестирования на примере **Catch**
+
+```ShellSession
+$ open https://github.com/philsquared/Catch
 ```
 
 ## Tasks
 
-- [X] 1. Создать публичный репозиторий с названием **lab03** и с лиценцией **MIT**
-- [X] 2. Ознакомиться со ссылками учебного материала
-- [X] 3. Выполнить инструкцию учебного материала
+- [X] 1. Создать публичный репозиторий с названием **lab06** на сервисе **GitHub**
+- [X] 2. Выполнить инструкцию учебного материала
+- [X] 3. Ознакомиться со ссылками учебного материала
 - [X] 4. Составить отчет и отправить ссылку личным сообщением в **Slack**
 
 ## Tutorial
 
 ```ShellSession
 $ export GITHUB_USERNAME=<имя_пользователя>
-$ export GITHUB_EMAIL=<адрес_почтового_ящика>
-$ alias edit=<nano|vi|vim|subl>
+$ alias gsed=sed # for *-nix system
 ```
 
 ```ShellSession
 $ cd ${GITHUB_USERNAME}/workspace
+$ pushd .
 $ source scripts/activate
 ```
 
 ```ShellSession
-$ mkdir projects/lab03 && cd projects/lab03
-$ git init
-$ git config --global user.name ${GITHUB_USERNAME}
-$ git config --global user.email ${GITHUB_EMAIL}
-$ git config -e --global
-$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab03.git
-$ git pull origin master
-$ touch README.md
-$ git status
-$ git add README.md
-$ git commit -m"added README.md"
-$ git push origin master
-```
-
-Добавить на сервисе **GitHub** в репозитории **lab03** файл **.gitignore**
-со следующем содержимом:
-
-```ShellSession
-*build*/
-*install*/
-*.swp
-.idea/
+$ git clone https://github.com/${GITHUB_USERNAME}/lab05 projects/lab06
+$ cd projects/lab06
+$ git remote remove origin
+$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab06
 ```
 
 ```ShellSession
-$ git pull origin master
-$ git log
+$ mkdir tests
+$ wget https://github.com/philsquared/Catch/releases/download/v1.9.3/catch.hpp -O tests/catch.hpp
+$ cat > tests/main.cpp <<EOF
+#define CATCH_CONFIG_MAIN
+#include "catch.hpp"
+EOF
 ```
 
 ```ShellSession
-$ mkdir sources
-$ mkdir include
-$ mkdir examples
-$ cat > sources/print.cpp <<EOF
+$ gsed -i '/option(BUILD_EXAMPLES "Build examples" OFF)/a\
+option(BUILD_TESTS "Build tests" OFF)
+' CMakeLists.txt
+$ cat >> CMakeLists.txt <<EOF
+
+if(BUILD_TESTS)
+	enable_testing()
+	file(GLOB \${PROJECT_NAME}_TEST_SOURCES tests/*.cpp)
+	add_executable(check \${\${PROJECT_NAME}_TEST_SOURCES})
+	target_link_libraries(check \${PROJECT_NAME} \${DEPENDS_LIBRARIES})
+	add_test(NAME check COMMAND check "-s" "-r" "compact" "--use-colour" "yes") 
+endif()
+EOF
+```
+
+```ShellSession
+$ cat >> tests/test1.cpp <<EOF
+#include "catch.hpp"
 #include <print.hpp>
 
-void print(const std::string& text, std::ostream& out) {
-  out << text;
-}
-
-void print(const std::string& text, std::ofstream& out) {
-  out << text;
-}
-EOF
-```
-
-```ShellSession
-$ cat > include/print.hpp <<EOF
-#include <string>
-#include <fstream>
-#include <iostream>
-
-void print(const std::string& text, std::ostream& out = std::cout);
-void print(const std::string& text, std::ofstream& out);
-EOF
-```
-
-```ShellSession
-$ cat > examples/example1.cpp <<EOF
-#include <print.hpp>
-
-int main(int argc, char** argv) {
-  print("hello");
+TEST_CASE("output values should match input values", "[file]") {
+  std::string text = "hello";
+  std::ofstream out("file.txt");
+  
+  print(text, out);
+  out.close();
+  
+  std::string result;
+  std::ifstream in("file.txt");
+  in >> result;
+  
+  REQUIRE(result == text);
 }
 EOF
 ```
 
 ```ShellSession
-$ cat > examples/example2.cpp <<EOF
-#include <fstream>
-#include <print.hpp>
-
-int main(int argc, char** argv) {
-  std::ofstream file("log.txt");
-  print(std::string("hello"), file);
-}
-EOF
+$ cmake -H. -B_build -DBUILD_TESTS=ON
+$ cmake --build _build
+$ cmake --build _build --target test
 ```
 
 ```ShellSession
-$ edit README.md
+$ _build/check -s -r compact
+$ cmake --build _build --target test -- ARGS=--verbose 
 ```
 
 ```ShellSession
-$ git status
+$ gsed -i 's/lab05/lab06/g' README.md
+$ gsed -i 's/\(DCMAKE_INSTALL_PREFIX=_install\)/\1 -DBUILD_TESTS=ON/' .travis.yml
+$ gsed -i '/cmake --build _build --target install/a\
+- cmake --build _build --target test -- ARGS=--verbose
+' .travis.yml
+```
+
+```ShellSession
+$ travis lint
+```
+
+```ShellSession
 $ git add .
-$ git commit -m"added sources"
+$ git commit -m"added tests"
 $ git push origin master
+```
+
+```ShellSession
+$ travis login --auto
+$ travis enable
+```
+
+```ShellSession
+$ mkdir artifacts
+$ sleep 20s && gnome-screenshot --file artifacts/screenshot.png
+# for macOS: $ screencapture -T 20 artifacts/screenshot.png
+# open https://github.com/${GITHUB_USERNAME}/lab06
 ```
 
 ## Report
 
 ```ShellSession
-$ cd ~/workspace/labs/
-$ export LAB_NUMBER=03
-$ git clone https://github.com/tp-labs/lab${LAB_NUMBER}.git tasks/lab${LAB_NUMBER}
+$ popd
+$ export LAB_NUMBER=06
+$ git clone https://github.com/tp-labs/lab${LAB_NUMBER} tasks/lab${LAB_NUMBER}
 $ mkdir reports/lab${LAB_NUMBER}
 $ cp tasks/lab${LAB_NUMBER}/README.md reports/lab${LAB_NUMBER}/REPORT.md
 $ cd reports/lab${LAB_NUMBER}
@@ -134,10 +137,8 @@ $ gistup -m "lab${LAB_NUMBER}"
 
 ## Links
 
-- [GitHub](https://github.com)
-- [Bitbucket](https://bitbucket.org)
-- [Gitlab](https://about.gitlab.com)
-- [LearnGitBranching](http://learngitbranching.js.org/)
+- [Boost.Tests](http://www.boost.org/doc/libs/1_63_0/libs/test/doc/html/)
+- [Google Test](https://github.com/google/googletest)
 
 ```
 Copyright (c) 2017 Братья Вершинины
