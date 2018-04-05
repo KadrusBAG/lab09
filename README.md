@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/KadrusBAG/lab06.svg?branch=master)](https://travis-ci.org/KadrusBAG/lab06)
+[![Build Status](https://travis-ci.org/KadrusBAG/lab06.svg?branch=master)](https://travis-ci.org/KadrusBAG/lab06)
 ## Laboratory work III
 
 Данная лабораторная работа посвещена изучению систем контроля версий на примере **Git**.
